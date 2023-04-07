@@ -11,7 +11,13 @@ function DueDate({ date }: { date: Date }) {
 
   return (
     <span className={`due-date due-date--${className}`}>
-      {format(date, "MMM d")}
+      {diff === -1
+        ? "Yesterday"
+        : diff === 0
+        ? "Today"
+        : diff === 1
+        ? "Tomorrow"
+        : format(date, "MMM d")}
     </span>
   );
 }
