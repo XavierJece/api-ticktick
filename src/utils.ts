@@ -37,3 +37,17 @@ export function useDebouncedCallback<T extends (...args: any[]) => void>(
     });
   }, [callbackRef]) as T;
 }
+
+export function api<T = any>(
+  path: string,
+  method: string,
+  body?: any
+): Promise<T> {
+  return fetch(`/api${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  }).then((res) => res.json());
+}

@@ -4,6 +4,7 @@ export default function List({
   items: {
     title: React.ReactNode;
     href?: string;
+    click?: () => void;
     subtitle?: React.ReactNode;
   }[];
 }) {
@@ -21,7 +22,15 @@ export default function List({
 
         return (
           <li key={index} className="list__item">
-            {item.href ? (
+            {item.click ? (
+              <button
+                type="button"
+                onClick={item.click}
+                className="list__item-content"
+              >
+                {content}
+              </button>
+            ) : item.href ? (
               <a href={item.href} className="list__item-content">
                 {content}
               </a>

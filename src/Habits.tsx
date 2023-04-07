@@ -1,8 +1,15 @@
 import Card from "./Card";
 import List from "./List";
 import { Habit } from "./types";
+import { api } from "./utils";
 
-export default function Habits({ items }: { items: Habit[] }) {
+export default function Habits({
+  items,
+  requestRefresh,
+}: {
+  items: Habit[];
+  requestRefresh: () => void;
+}) {
   return (
     <Card title="Habits">
       <List
@@ -21,7 +28,15 @@ export default function Habits({ items }: { items: Habit[] }) {
                 className={`habit--${stauts}`}
               >{`${item.value}/${item.goal}`}</span>
             ),
-            href: `https://ticktick.com/webapp/#q/all/week/${item.id}`,
+            click: () => {
+              if (confirm("Check In?")) {
+                api("/habits/checkin", "POST", {
+                  habitId: item.habitId,
+                }).then(() => {
+                  requestRefresh();
+                });
+              }
+            },
           };
         })}
       />

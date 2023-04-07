@@ -129,6 +129,13 @@ ul.links li a:hover img {
   text-decoration: none;
 }
 
+button.list__item-content {
+  border: 0;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+}
+
 .list__item:hover {
   background: rgba(255, 255, 255, 0.1);
 }

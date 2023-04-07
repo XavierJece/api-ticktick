@@ -2,6 +2,7 @@ import { differenceInCalendarDays, format } from "date-fns";
 import Card from "./Card";
 import List from "./List";
 import { ScheduledTask, UnscheduledTask } from "./types";
+import { api } from "./utils";
 
 const today = new Date();
 
@@ -25,9 +26,11 @@ function DueDate({ date }: { date: Date }) {
 export default function Tasks({
   title,
   items,
+  requestRefresh,
 }: {
   title: string;
   items: (ScheduledTask | UnscheduledTask)[];
+  requestRefresh: () => void;
 }) {
   return (
     <Card title={title}>
@@ -38,7 +41,20 @@ export default function Tasks({
             "dueDate" in item ? (
               <DueDate date={new Date(item.dueDate)} />
             ) : undefined,
-          href: `https://ticktick.com/webapp/#q/all/week/${item.id}`,
+          click:
+            "projectId" in item
+              ? () => {
+                  if (confirm("Complete?")) {
+                    api("/tasks/complete", "POST", {
+                      id: item.id,
+                      projectId: item.projectId,
+                    }).then(() => {
+                      requestRefresh();
+                    });
+                  }
+                }
+              : undefined,
+          //href: `https://ticktick.com/webapp/#q/all/week/${item.id}`,
         }))}
       />
     </Card>

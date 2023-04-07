@@ -1,9 +1,8 @@
-export interface ScheduledTask {
+export type ScheduledTask = {
   id: string;
   title: string;
   dueDate: string;
-  type: "event" | "task";
-}
+} & ({ projectId: string; type: "task" } | { type: "event" });
 
 export interface UnscheduledTask {
   id: string;
@@ -11,11 +10,11 @@ export interface UnscheduledTask {
 }
 
 export interface Habit {
-  id: string;
+  habitId: string;
+  checkinId: string;
   name: string;
   goal: number;
   value: number;
-  status: "incomplete" | "lost" | "completed";
 }
 
 export interface TickTickData {

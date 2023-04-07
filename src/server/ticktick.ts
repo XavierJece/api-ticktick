@@ -1,8 +1,13 @@
 import { differenceInCalendarDays, format, subDays } from "date-fns";
+import objectid from "bson-objectid";
 import request from "request";
 import { Habit } from "../types";
 
 const _req = request.defaults({ jar: true });
+
+function tickStamp(date: Date) {
+  return format(date, "yyyy-MM-dd").split("-").join("");
+}
 
 function callAPI<T = any>(path: string, method: string, json?: any) {
   return new Promise<T>((resolve, reject) => {
@@ -84,9 +89,7 @@ export default class TickTick {
       "POST",
       {
         habitIds: habits.map((it) => it.id),
-        afterStamp: format(subDays(new Date(), 1), "yyyy-MM-dd")
-          .split("-")
-          .join(""),
+        afterStamp: tickStamp(subDays(new Date(), 1)),
       }
     ).then((res) => res.checkins);
 
@@ -101,24 +104,74 @@ export default class TickTick {
 
     return habits.map((habit) => {
       const checkin = checkinsByHabitId[habit.id];
-      const status = checkin?.status;
 
       return {
-        id: habit.id,
+        habitId: habit.id,
+        checkinId: checkin?.id,
         name: habit.name,
         goal: habit.goal,
         value: checkin?.value || 0,
-        status:
-          typeof status === "number"
-            ? status === 0
-              ? "incomplete"
-              : status === 1
-              ? "lost"
-              : status === 2
-              ? "completed"
-              : "incomplete"
-            : "incomplete",
       };
+    });
+  }
+
+  async checkinHabit(habitId: string) {
+    const habit = (await this.getTodayHabits()).find(
+      (it) => it.habitId === habitId
+    );
+
+    if (!habit) {
+      throw new Error("habit not found");
+    }
+
+    if (habit.value === habit.goal) {
+      return;
+    }
+
+    const value = habit.value + 1;
+    const status = value === habit.goal ? 2 : 0;
+
+    const checkin = {
+      checkinStamp: tickStamp(new Date()),
+      opTime: new Date(),
+      goal: habit.goal,
+      habitId,
+      id: habit.checkinId || objectid(),
+      status,
+      value,
+    };
+
+    return callAPI("v2/habitCheckins/batch", "POST", {
+      add: !habit.checkinId ? [checkin] : [],
+      update: habit.checkinId ? [checkin] : [],
+      delete: [],
+    });
+  }
+
+  async completeTask(id: string, projectId: string) {
+    const task = await callAPI(`v2/task/${id}?projectId=${projectId}`, "GET");
+
+    if (!task) {
+      throw new Error("task not found");
+    }
+
+    const now = new Date();
+
+    return callAPI("v2/batch/task", "POST", {
+      add: [],
+      update: [
+        {
+          ...task,
+          status: 2,
+          modifiedTime: now,
+          completedTime: now,
+          timeZone: "America/Sao_Paulo",
+        },
+      ],
+      delete: [],
+      addAttachments: [],
+      updateAttachments: [],
+      deleteAttachments: [],
     });
   }
 }

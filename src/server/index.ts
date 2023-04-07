@@ -13,6 +13,7 @@ const tick = new TickTick();
 const port = process.env.PORT || 3002;
 
 app.use(cookieParser());
+app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 setupAuth(app);
@@ -46,6 +47,7 @@ app.get("/api/data", (_, res) => {
         if (it.dueDate) {
           scheduled.push({
             id: it.id,
+            projectId: it.projectId,
             title: it.title,
             dueDate: fixTimezone(it.dueDate),
             type: "task",
@@ -100,9 +102,23 @@ app.get("/api/data", (_, res) => {
 
       res.send(data);
     },
-    () => {
-      res.sendStatus(500);
+    (error) => {
+      res.status(500).send({ error });
     }
+  );
+});
+
+app.post("/api/habits/checkin", (req, res) => {
+  tick.checkinHabit(req.body.habitId).then(
+    () => res.send({ success: true }),
+    (error) => res.status(500).send({ error })
+  );
+});
+
+app.post("/api/tasks/complete", (req, res) => {
+  tick.completeTask(req.body.id, req.body.projectId).then(
+    () => res.send({ success: true }),
+    (error) => res.status(500).send({ error })
   );
 });
 
