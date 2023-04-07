@@ -1,39 +1,21 @@
 import path from "path";
 import express from "express";
+import bodyParser from "body-parser";
+import cookieParser from "cookie-parser";
 import { differenceInCalendarDays, isWithinInterval } from "date-fns";
 import TickTick from "./ticktick";
-import { ticktick as config, credentials } from "../config.json";
+import { ticktick as config } from "../config.json";
 import { ScheduledTask, UnscheduledTask } from "../types";
+import setupAuth from "./setupAuth";
 
 const app = express();
 const tick = new TickTick();
 const port = process.env.PORT || 3002;
 
-app.use((req, res, next) => {
-  const reject = () => {
-    res.setHeader("www-authenticate", "Basic");
-    res.sendStatus(401);
-  };
+app.use(cookieParser());
+app.use(bodyParser.urlencoded({ extended: false }));
 
-  const authorization = req.headers.authorization;
-
-  if (!authorization) {
-    return reject();
-  }
-
-  const [username, password] = Buffer.from(
-    authorization.replace("Basic ", ""),
-    "base64"
-  )
-    .toString()
-    .split(":");
-
-  if (username !== credentials.username || password !== credentials.password) {
-    return reject();
-  }
-
-  return next();
-});
+setupAuth(app);
 
 app.use(express.static(path.resolve(__dirname + "/../")));
 
