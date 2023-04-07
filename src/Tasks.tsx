@@ -8,6 +8,7 @@ const today = new Date();
 function DueDate({ date }: { date: Date }) {
   const diff = differenceInCalendarDays(date, today);
   const className = diff < 0 ? "past" : diff === 0 ? "today" : "later";
+
   return (
     <span className={`due-date due-date--${className}`}>
       {format(date, "MMM d")}

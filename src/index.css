@@ -153,9 +153,16 @@ ul.links li a:hover img {
   font-weight: 600;
 }
 
+.habit--zeroed,
 .due-date--past {
   color: #ff5555;
 }
+
+.habit--partial {
+  color: #f1fa8c;
+}
+
+.habit--done,
 .due-date--today {
   color: #50fa7b;
 }
