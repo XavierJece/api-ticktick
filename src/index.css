@@ -127,6 +127,7 @@ ul.links li a:hover img {
   white-space: nowrap;
   color: inherit;
   text-decoration: none;
+  font-size: inherit;
 }
 
 button.list__item-content {
