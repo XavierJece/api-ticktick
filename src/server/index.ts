@@ -56,6 +56,8 @@ app.get("/api/data", (_, res) => {
           unscheduled.push({
             id: it.id,
             title: it.title,
+            projectId: it.projectId,
+            type: "task",
           });
         }
       });

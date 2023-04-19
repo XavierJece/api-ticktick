@@ -54,7 +54,9 @@ export default function Tasks({
                   }
                 }
               : undefined,
-          //href: `https://ticktick.com/webapp/#q/all/week/${item.id}`,
+          href: !("projectId" in item)
+            ? `https://ticktick.com/webapp/#q/all/week/${item.id}`
+            : undefined,
         }))}
       />
     </Card>

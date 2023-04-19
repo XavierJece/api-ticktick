@@ -7,6 +7,8 @@ export type ScheduledTask = {
 export interface UnscheduledTask {
   id: string;
   title: string;
+  projectId: string;
+  type: "task";
 }
 
 export interface Habit {

@@ -31,7 +31,11 @@ export default function List({
                 {content}
               </button>
             ) : item.href ? (
-              <a href={item.href} className="list__item-content">
+              <a
+                href={item.href}
+                className="list__item-content"
+                target="_blank"
+              >
                 {content}
               </a>
             ) : (
