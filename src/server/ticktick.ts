@@ -2,6 +2,7 @@ import { differenceInCalendarDays, format, subDays } from "date-fns";
 import objectid from "bson-objectid";
 import request from "request";
 import { Habit } from "../types";
+import { ticktick } from "../config.json";
 
 const _req = request.defaults({ jar: true });
 
@@ -17,11 +18,12 @@ function callAPI<T = any>(path: string, method: string, json?: any) {
         url: `https://ticktick.com/api/${path}`,
         headers: {
           "Content-Type": "application/json",
-          Origin: "https://ticktick.com",
+          "X-Device": JSON.stringify(ticktick.appInformation["X-Device"])
         },
         json,
       },
       (error, __, response) => {
+        console.log(response)
         if (error) {
           console.error(error);
           return reject(error);
