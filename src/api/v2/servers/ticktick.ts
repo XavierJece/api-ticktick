@@ -1,17 +1,17 @@
 import axios from "axios";
 import { differenceInCalendarDays, subDays } from "date-fns";
-import dayjs from 'dayjs'
+import dayjs from "dayjs";
 import { ticktick } from "../../../config.json";
-import en from 'date-fns/locale/en-US';
+import en from "date-fns/locale/en-US";
 
 const api = axios.create({
   baseURL: "https://api.ticktick.com/api",
   headers: {
     "Content-Type": "application/json",
     "X-Device": JSON.stringify(ticktick.appInformation["X-Device"]),
-    "Cookie": `t=${ticktick.token}`
-  }
-})
+    Cookie: `t=${ticktick.token}`,
+  },
+});
 
 interface IHabitCheckin {
   habitId: string;
@@ -37,18 +37,15 @@ interface IHabit {
     freq: string;
     interval?: number;
     byDays: string[];
-  }
+  };
 }
-
-
-
 
 class TickTick {
   async login(username: string, password: string): Promise<string> {
-    const response = await api.post(
-      "v2/user/signon?wc=true&remember=true",
-      { username, password },
-    );
+    const response = await api.post("v2/user/signon?wc=true&remember=true", {
+      username,
+      password,
+    });
 
     if (!response.data.token) {
       throw new Error(`Could not login | ${response.data}`);
@@ -58,39 +55,38 @@ class TickTick {
   }
 
   async getAllUncompletedTasks() {
-    const response = await api.get("v2/batch/check/1")
-    
+    const response = await api.get("v2/batch/check/1");
 
-    return response.data
+    return response.data;
   }
 
   async getCalenderEvents() {
-    const response = await api.get("v2/calendar/bind/events/all")
-    
-    return response.data
+    const response = await api.get("v2/calendar/bind/events/all");
+
+    return response.data;
   }
 
   private async getAllHabits(): Promise<IHabit[]> {
-    type HabitAPIResponse = Omit<IHabit, 'repeat'>
+    type HabitAPIResponse = Omit<IHabit, "repeat">;
 
     const response = await api.get<HabitAPIResponse[]>("v2/habits");
-    
+
     return response.data.map((habit: HabitAPIResponse) => {
-      const repeatRule = habit.repeatRule.split(";")
+      const repeatRule = habit.repeatRule.split(";");
 
-      let repeat = {} as IHabit['repeat']
+      let repeat = {} as IHabit["repeat"];
 
-      if(repeatRule.length === 3) {
+      if (repeatRule.length === 3) {
         repeat = {
           freq: repeatRule[0].split("=")[1],
           interval: Number(repeatRule[1].split("=")[1]),
-          byDays: repeatRule[2].split("=")[1].split(','),
-        }
-      }else if(repeatRule.length === 2) {
+          byDays: repeatRule[2].split("=")[1].split(","),
+        };
+      } else if (repeatRule.length === 2) {
         repeat = {
           freq: repeatRule[0].split("=")[1],
-          byDays: repeatRule[1].split("=")[1].split(','),
-        }
+          byDays: repeatRule[1].split("=")[1].split(","),
+        };
       }
 
       return {
@@ -106,30 +102,65 @@ class TickTick {
         repeatRule: habit.repeatRule,
         reminders: habit.reminders,
         repeat,
-      }
-    })
+      };
+    });
   }
 
-
-  private async getHabitsCheckins(habitIds: string[], afterStamp: string): Promise<IHabitCheckin[]> {
+  private async getHabitsCheckins(
+    habitIds: string[],
+    afterStamp: string
+  ): Promise<IHabitCheckin[]> {
     const response = await api.post("v2/habitCheckins/query", {
-      habitIds, afterStamp
-    })
-    
-    return response.data.checkins
+      habitIds,
+      afterStamp,
+    });
+
+    return response.data.checkins;
   }
 
-
-  async getTodayHabits() {
-    const habits = await this.getAllHabits()
+  async getTodayHabits(query: {
+    completed?: boolean;
+    uncompleted?: boolean;
+  }={uncompleted: true}): Promise<IHabit[]> {
+    const habits = await this.getAllHabits();
 
     const today = new Date();
-    const weekDayToday = dayjs(today).format('dd').toUpperCase()
-    
-    console.log(weekDayToday)
+    const weekDayToday = dayjs(today).format("dd").toUpperCase();
 
-    const todayHabits = habits.filter((habit) => habit.repeat.byDays.includes(weekDayToday))
+    console.log(weekDayToday);
 
+    const todayHabits = habits.filter((habit) =>
+      habit.repeat.byDays.includes(weekDayToday)
+    );
+
+    //add filters
+    if (query) {
+      const idsTodayHabits = todayHabits.map((habit) => habit.id);
+      const afterStamp = this.convertDateToTickTickStamp(subDays(today, 1));
+
+      console.log({ idsTodayHabits, afterStamp });
+
+      const checkinHabit = await this.getHabitsCheckins(
+        idsTodayHabits,
+        afterStamp
+      );
+
+      // Habit with status 0 is uncompleted and 2 is completed
+      const idsCompletedHabits = Object.values(checkinHabit)
+        .flat()
+        .filter((checkedHabit) => checkedHabit.status !== 0)
+        .map(({ habitId }) => habitId);
+
+      if (query.completed) {
+        return todayHabits.filter((habit) =>
+          idsCompletedHabits.includes(habit.id)
+        );
+      } else if (query.uncompleted) {
+        return todayHabits.filter(
+          (habit) => !idsCompletedHabits.includes(habit.id)
+        );
+      }
+    }
 
     return todayHabits;
   }
@@ -140,7 +171,7 @@ class TickTick {
 
   // utils
   private convertDateToTickTickStamp(date: Date): string {
-    return dayjs(date).format("yyyy-MM-dd").split("-").join("");
+    return dayjs(date).format("YYYY-MM-DD").split("-").join("");
   }
 }
 
