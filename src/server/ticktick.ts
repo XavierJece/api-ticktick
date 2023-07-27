@@ -25,6 +25,7 @@ function callAPI<T = any>(path: string, method: string, json?: any) {
 
 
       (error, __, response) => {
+        console.log(response)
         if (error) {
           console.error(error);
           return reject(error);

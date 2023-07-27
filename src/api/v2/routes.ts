@@ -22,8 +22,12 @@ routesAPIV2.post('/api/v2/login', async  (_, res) => {
   return
 })
 
-routesAPIV2.get('/api/v2/data', (_, res) => {
-  res.status(501).json({ error: 'Not implemented' })
+routesAPIV2.get('/api/v2/data', async (_, res) => {
+  // const uncompletedTasks = await ticktickServer.getAllUncompletedTasks()
+  // const calenderEvents = await ticktickServer.getCalenderEvents()
+  const todayHabits = await ticktickServer.getTodayHabits()
+
+  res.status(200).json(todayHabits)
 })
 
 routesAPIV2.post('/api/v2/habits/checkin', (_, res) => {
