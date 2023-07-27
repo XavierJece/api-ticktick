@@ -22,8 +22,9 @@ function callAPI<T = any>(path: string, method: string, json?: any) {
         },
         json,
       },
+
+
       (error, __, response) => {
-        console.log(response)
         if (error) {
           console.error(error);
           return reject(error);
@@ -48,6 +49,7 @@ function callAPI<T = any>(path: string, method: string, json?: any) {
 
 export default class TickTick {
   login({ username, password }: { username: string; password: string }) {
+
     return callAPI("v2/user/signon?wc=true&remember=true", "POST", {
       username,
       password,

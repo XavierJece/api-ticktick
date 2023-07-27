@@ -7,16 +7,23 @@ import TickTick from "./ticktick";
 import { ticktick as config } from "../config.json";
 import { ScheduledTask, UnscheduledTask } from "../types";
 import setupAuth from "./setupAuth";
+import routesV2 from "../api/v2/routes";
 
 const app = express();
 const tick = new TickTick();
 const port = process.env.PORT || 3002;
 
-app.use(cookieParser());
 app.use(bodyParser.json());
+
+app.use(routesV2);
+
+
+app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: false }));
 
-setupAuth(app);
+
+
+// setupAuth(app);
 
 app.use(express.static(path.resolve(__dirname + "/../")));
 
@@ -124,8 +131,5 @@ app.post("/api/tasks/complete", (req, res) => {
   );
 });
 
-tick
-  .login({ username: config.username, password: config.password })
-  .then(() => {
-    app.listen(port, () => console.log("Server listening at port", port));
-  });
+app.listen(port, () => console.log("Server listening at port", port));
+
