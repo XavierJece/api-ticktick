@@ -1,15 +1,13 @@
 import axios from "axios";
-import { differenceInCalendarDays, subDays } from "date-fns";
 import dayjs from "dayjs";
 import { ticktick } from "../../../config.json";
-import en from "date-fns/locale/en-US";
 
 const api = axios.create({
   baseURL: "https://api.ticktick.com/api",
   headers: {
     "Content-Type": "application/json",
-    "X-Device": JSON.stringify(ticktick.appInformation["X-Device"]),
-    Cookie: `t=${ticktick.token}`,
+    "X-device": JSON.stringify(ticktick.appInformation["X-Device"]),
+    cookie: `t=${ticktick.token}`,
   },
 });
 
@@ -19,6 +17,9 @@ interface IHabitCheckin {
   opTime: string;
   status: 0 | 1 | 2;
   value: number;
+  checkinStamp: string;
+  checkinTime: string;
+  goal: 1;
 }
 
 interface IHabit {
@@ -109,7 +110,7 @@ class TickTick {
   private async getHabitsCheckins(
     habitIds: string[],
     afterStamp: string
-  ): Promise<IHabitCheckin[]> {
+  ): Promise<Record<string, IHabitCheckin[]>> {
     const response = await api.post("v2/habitCheckins/query", {
       habitIds,
       afterStamp,
@@ -118,13 +119,15 @@ class TickTick {
     return response.data.checkins;
   }
 
-  async getTodayHabits(query: {
-    completed?: boolean;
-    uncompleted?: boolean;
-  }={uncompleted: true}): Promise<IHabit[]> {
+  async getTodayHabits(
+    query: {
+      completed?: boolean;
+      uncompleted?: boolean;
+    } = { uncompleted: true }
+  ): Promise<IHabit[]> {
     const habits = await this.getAllHabits();
 
-    const today = new Date();
+    const today = dayjs();
     const weekDayToday = dayjs(today).format("dd").toUpperCase();
 
     console.log(weekDayToday);
@@ -136,7 +139,7 @@ class TickTick {
     //add filters
     if (query) {
       const idsTodayHabits = todayHabits.map((habit) => habit.id);
-      const afterStamp = this.convertDateToTickTickStamp(subDays(today, 1));
+      const afterStamp = this.toTickTickStamp(today.subtract(1, "day"));
 
       console.log({ idsTodayHabits, afterStamp });
 
@@ -165,13 +168,75 @@ class TickTick {
     return todayHabits;
   }
 
-  checkinHabit() {}
+  async checkinHabit(id: string) {
+    const today = dayjs();
+    const afterStamp = this.toTickTickStamp(today.subtract(1, "day"));
+    const todayStamp = this.toTickTickStamp(today);
+
+    const habitsCheckins = await this.getHabitsCheckins([id], afterStamp);
+    const checkin =
+      habitsCheckins[id].length > 0 ? habitsCheckins[id][0] : undefined;
+
+    console.log("habitsCheckins: ", habitsCheckins);
+    console.log("checkin: ", checkin);
+
+    let payload: Record<"add" | "update" | "delete", IHabitCheckin[]> = {
+      add: [],
+      update: [],
+      delete: [],
+    };
+
+    if (!checkin) {
+      // const checkData: ICheckHabitParams = {}
+      // payload.add.push(checkData);
+    } else if (checkin.status === 2) {
+      // Habit with status 0 is uncompleted and 2 is completed
+      return {
+        checked: false,
+        message: "Habit already concluded today",
+      };
+    } else {
+      const { value, goal } = checkin;
+      const newValue = value + 1;
+      const newStatus = newValue === goal ? 2 : 0;
+
+      const checkData: IHabitCheckin = {
+        ...checkin,
+        value: value + 1,
+        status: newStatus,
+        checkinStamp: todayStamp,
+        checkinTime: this.toISO8601(today),
+        opTime: this.toISO8601(today),
+      };
+
+      payload.update.push(checkData);
+    }
+
+    console.log("payload", payload);
+
+    try {
+      const response = await api.post<Record<string, Object>>(
+        "v2/habitCheckins/batch",
+        payload
+      );
+
+      console.log("BATATA", response.data);
+    } catch (error) {
+      console.log("ERROR", error);
+    }
+
+    return true;
+  }
 
   completeTask() {}
 
   // utils
-  private convertDateToTickTickStamp(date: Date): string {
-    return dayjs(date).format("YYYY-MM-DD").split("-").join("");
+  private toTickTickStamp(date: Date | dayjs.Dayjs): string {
+    return dayjs(date).format("YYYYMMDD");
+  }
+
+  private toISO8601(date: Date | dayjs.Dayjs): string {
+    return dayjs(date).format("YYYY-MM-DDTHH:mm:ss.SSSZ");
   }
 }
 

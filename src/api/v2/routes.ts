@@ -30,8 +30,14 @@ routesAPIV2.get('/api/v2/data', async (_, res) => {
   res.status(200).json(todayHabits)
 })
 
-routesAPIV2.post('/api/v2/habits/checkin', (_, res) => {
-  res.status(501).json({ error: 'Not implemented' })
+routesAPIV2.patch('/api/v2/habits/:id/checkin', async (req, res) => {
+  console.log(req.params.id)
+  
+  const checked = await ticktickServer.checkinHabit(req.params.id);
+
+
+  res.status(200).json({ checked })
+  
 })
 
 routesAPIV2.post('/api/v2/tasks/complete', (_, res) => {
