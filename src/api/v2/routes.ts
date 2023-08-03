@@ -33,10 +33,10 @@ routesAPIV2.get('/api/v2/data', async (_, res) => {
 routesAPIV2.patch('/api/v2/habits/:id/checkin', async (req, res) => {
   console.log(req.params.id)
   
-  const checked = await ticktickServer.checkinHabit(req.params.id);
+  const response = await ticktickServer.checkinHabit(req.params.id);
 
 
-  res.status(200).json({ checked })
+  res.status(200).json(response)
   
 })
 

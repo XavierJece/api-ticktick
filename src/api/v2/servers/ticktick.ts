@@ -19,7 +19,7 @@ interface IHabitCheckin {
   value: number;
   checkinStamp: string;
   checkinTime: string;
-  goal: 1;
+  goal: number;
 }
 
 interface IHabit {
@@ -54,6 +54,7 @@ class TickTick {
 
     return response.data.token;
   }
+  //*** **** TASKS **** ***/
 
   async getAllUncompletedTasks() {
     const response = await api.get("v2/batch/check/1");
@@ -61,11 +62,15 @@ class TickTick {
     return response.data;
   }
 
+  //*** **** CALENDER EVENTS **** ***/
+
   async getCalenderEvents() {
     const response = await api.get("v2/calendar/bind/events/all");
 
     return response.data;
   }
+
+  //*** **** HABITS **** ***/
 
   private async getAllHabits(): Promise<IHabit[]> {
     type HabitAPIResponse = Omit<IHabit, "repeat">;
@@ -130,8 +135,6 @@ class TickTick {
     const today = dayjs();
     const weekDayToday = dayjs(today).format("dd").toUpperCase();
 
-    console.log(weekDayToday);
-
     const todayHabits = habits.filter((habit) =>
       habit.repeat.byDays.includes(weekDayToday)
     );
@@ -140,8 +143,6 @@ class TickTick {
     if (query) {
       const idsTodayHabits = todayHabits.map((habit) => habit.id);
       const afterStamp = this.toTickTickStamp(today.subtract(1, "day"));
-
-      console.log({ idsTodayHabits, afterStamp });
 
       const checkinHabit = await this.getHabitsCheckins(
         idsTodayHabits,
@@ -177,8 +178,6 @@ class TickTick {
     const checkin =
       habitsCheckins[id].length > 0 ? habitsCheckins[id][0] : undefined;
 
-    console.log("habitsCheckins: ", habitsCheckins);
-    console.log("checkin: ", checkin);
 
     let payload: Record<"add" | "update" | "delete", IHabitCheckin[]> = {
       add: [],
@@ -187,8 +186,27 @@ class TickTick {
     };
 
     if (!checkin) {
-      // const checkData: ICheckHabitParams = {}
-      // payload.add.push(checkData);
+      const getHabit = await this.getAllHabits();
+      const habit = getHabit.find((habit) => habit.id === id);
+
+      if(!habit) {
+        return {
+          checked: false,
+          message: "Habit not found",
+        };
+      }
+
+      const checkData:Omit<IHabitCheckin, 'id'> = {
+        value: 1,
+        status: habit.goal === 1 ? 2 : 0,
+        checkinStamp: todayStamp,
+        checkinTime: this.toISO8601(today),
+        opTime: this.toISO8601(today),
+        goal: habit.goal,
+        habitId: id,
+      };
+
+      payload.add.push(checkData as IHabitCheckin);
     } else if (checkin.status === 2) {
       // Habit with status 0 is uncompleted and 2 is completed
       return {
@@ -212,25 +230,36 @@ class TickTick {
       payload.update.push(checkData);
     }
 
-    console.log("payload", payload);
-
     try {
-      const response = await api.post<Record<string, Object>>(
+      const {data} = await api.post<Record<string, Object>>(
         "v2/habitCheckins/batch",
         payload
       );
 
-      console.log("BATATA", response.data);
-    } catch (error) {
-      console.log("ERROR", error);
-    }
+      if(Object.keys(data.id2error).length > 0) {
+        return {
+          checked: false,
+          message: 'Ticktick Error on checkin',
+          error: data.id2error
+        };
+      }
 
-    return true;
+      return {
+        checked: true,
+        message: 'Checked successfully',
+      }
+
+    } catch (error) {
+      return {
+        checked: false,
+        message: 'Server Error on checkin',
+        error,
+      };
+    }
   }
 
-  completeTask() {}
+  //*** **** UTILS **** ***/
 
-  // utils
   private toTickTickStamp(date: Date | dayjs.Dayjs): string {
     return dayjs(date).format("YYYYMMDD");
   }
