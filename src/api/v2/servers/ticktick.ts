@@ -168,7 +168,6 @@ class TickTick {
 
     return todayHabits;
   }
-
   async checkinHabit(id: string) {
     const today = dayjs();
     const afterStamp = this.toTickTickStamp(today.subtract(1, "day"));

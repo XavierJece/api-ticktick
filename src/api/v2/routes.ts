@@ -22,9 +22,22 @@ routesAPIV2.post('/api/v2/login', async  (_, res) => {
   return
 })
 
-routesAPIV2.get('/api/v2/data', async (_, res) => {
-  // const uncompletedTasks = await ticktickServer.getAllUncompletedTasks()
-  // const calenderEvents = await ticktickServer.getCalenderEvents()
+//*** **** TASKS **** ***/
+routesAPIV2.get('/api/v2/tasks/today', async (_, res) => {
+  //TODO updating method for return only today tasks
+  const todayHabits = await ticktickServer.getAllUncompletedTasks()
+
+  res.status(200).json(todayHabits)
+})
+
+routesAPIV2.post('/api/v2/tasks/:id/checkin', (_, res) => {
+  res.status(501).json({ error: 'Not implemented' })
+})
+
+
+
+//*** **** HABITS **** ***/
+routesAPIV2.get('/api/v2/habits/today', async (_, res) => {
   const todayHabits = await ticktickServer.getTodayHabits()
 
   res.status(200).json(todayHabits)
@@ -40,9 +53,6 @@ routesAPIV2.patch('/api/v2/habits/:id/checkin', async (req, res) => {
   
 })
 
-routesAPIV2.post('/api/v2/tasks/complete', (_, res) => {
-  res.status(501).json({ error: 'Not implemented' })
-})
 
 
 export default routesAPIV2;
