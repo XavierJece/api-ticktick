@@ -41,6 +41,39 @@ interface IHabit {
   };
 }
 
+interface ITask {
+  id: string;
+  projectId: string;
+  sortOrder: number;
+  title: string;
+  content: string;
+  startDate: string;
+  dueDate: string;
+  timeZone: string;
+  isFloating: boolean;
+  isAllDay: boolean;
+  reminders: any[];
+  repeatFirstDate: string;
+  exDate: any[];
+  completedTime: string;
+  completedUserId: number;
+  repeatTaskId: string;
+  priority: number;
+  status: number;
+  items: any[];
+  progress: number;
+  modifiedTime: string;
+  etag: string;
+  deleted: number;
+  createdTime: string;
+  creator: number;
+  repeatFrom: number;
+  tags: string[];
+  attachments: any[];
+  focusSummaries: any[];
+  kind: string;
+}
+
 class TickTick {
   async login(username: string, password: string): Promise<string> {
     const response = await api.post("v2/user/signon?wc=true&remember=true", {
@@ -57,9 +90,32 @@ class TickTick {
   //*** **** TASKS **** ***/
 
   async getAllUncompletedTasks() {
-    const response = await api.get("v2/batch/check/1");
+    const { data } = await api.get("v2/batch/check/0");
 
-    return response.data;
+    const tasks: ITask[] = data.syncTaskBean.update;
+
+    return tasks;
+  }
+
+  async getTodayTasks() {
+    const uncompletedTasks = await this.getAllUncompletedTasks();
+
+    const today = dayjs()
+      .locale("America/Sao_Paulo")
+      .hour(23)
+      .minute(59)
+      .second(59)
+      .millisecond(999);
+    console.log(today);
+
+    const todayTasks = uncompletedTasks.filter(
+      (task) =>
+        !!task.startDate &&
+        (today.isAfter(dayjs(task.startDate).locale(task.timeZone)) ||
+          today.isSame(dayjs(task.startDate).locale(task.timeZone)))
+    );
+
+    return todayTasks;
   }
 
   //*** **** CALENDER EVENTS **** ***/
@@ -177,7 +233,6 @@ class TickTick {
     const checkin =
       habitsCheckins[id].length > 0 ? habitsCheckins[id][0] : undefined;
 
-
     let payload: Record<"add" | "update" | "delete", IHabitCheckin[]> = {
       add: [],
       update: [],
@@ -188,14 +243,14 @@ class TickTick {
       const getHabit = await this.getAllHabits();
       const habit = getHabit.find((habit) => habit.id === id);
 
-      if(!habit) {
+      if (!habit) {
         return {
           checked: false,
           message: "Habit not found",
         };
       }
 
-      const checkData:Omit<IHabitCheckin, 'id'> = {
+      const checkData: Omit<IHabitCheckin, "id"> = {
         value: 1,
         status: habit.goal === 1 ? 2 : 0,
         checkinStamp: todayStamp,
@@ -230,28 +285,27 @@ class TickTick {
     }
 
     try {
-      const {data} = await api.post<Record<string, Object>>(
+      const { data } = await api.post<Record<string, Object>>(
         "v2/habitCheckins/batch",
         payload
       );
 
-      if(Object.keys(data.id2error).length > 0) {
+      if (Object.keys(data.id2error).length > 0) {
         return {
           checked: false,
-          message: 'Ticktick Error on checkin',
-          error: data.id2error
+          message: "Ticktick Error on checkin",
+          error: data.id2error,
         };
       }
 
       return {
         checked: true,
-        message: 'Checked successfully',
-      }
-
+        message: "Checked successfully",
+      };
     } catch (error) {
       return {
         checked: false,
-        message: 'Server Error on checkin',
+        message: "Server Error on checkin",
         error,
       };
     }

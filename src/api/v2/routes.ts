@@ -25,12 +25,12 @@ routesAPIV2.post('/api/v2/login', async  (_, res) => {
 //*** **** TASKS **** ***/
 routesAPIV2.get('/api/v2/tasks/today', async (_, res) => {
   //TODO updating method for return only today tasks
-  const todayHabits = await ticktickServer.getAllUncompletedTasks()
+  const todayTasks = await ticktickServer.getTodayTasks()
 
-  res.status(200).json(todayHabits)
+  res.status(200).json(todayTasks)
 })
 
-routesAPIV2.post('/api/v2/tasks/:id/checkin', (_, res) => {
+routesAPIV2.patch('/api/v2/tasks/:id/checkin', (_, res) => {
   res.status(501).json({ error: 'Not implemented' })
 })
 
